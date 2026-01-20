@@ -1,0 +1,158 @@
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+}
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoleName{
+  ADMIN
+  USER
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum ShowtimeStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Role {
+  id    Int      @id @default(autoincrement())
+  name  RoleName @unique
+  users User[]
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  fullName  String
+  isActive  Boolean   @default(true)
+  roleId    Int
+  role      Role      @relation(fields: [roleId], references: [id])
+  hashedRefreshToken String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  reservations Reservation[]
+}
+
+model Movie {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  duration    Int
+  posterUrl   String?
+  releaseDate DateTime
+  status      String   @default("ACTIVE")
+
+  showtimes   Showtime[]
+  genres      MovieGenre[]
+}
+
+model Genre {
+  id      Int           @id @default(autoincrement())
+  name    String        @unique
+  movies  MovieGenre[]
+}
+
+model MovieGenre {
+  movieId Int
+  genreId Int
+
+  movie Movie @relation(fields: [movieId], references: [id])
+  genre Genre @relation(fields: [genreId], references: [id])
+
+  @@id([movieId, genreId])
+}
+
+model Theater {
+  id        Int      @id @default(autoincrement())
+  name      String
+  totalRows Int
+  totalCols Int
+
+  seats     Seat[]
+  showtimes Showtime[]
+}
+
+model Seat {
+  id        Int     @id @default(autoincrement())
+  rowLabel  String
+  number    Int
+  theaterId Int
+
+  theater   Theater @relation(fields: [theaterId], references: [id])
+  reservations ReservationSeat[]
+}
+
+model Showtime {
+  id        Int      @id @default(autoincrement())
+  movieId   Int
+  theaterId Int
+  startTime DateTime
+  endTime   DateTime
+  price     Int
+  status    ShowtimeStatus @default(OPEN)
+
+  movie       Movie       @relation(fields: [movieId], references: [id])
+  theater     Theater     @relation(fields: [theaterId], references: [id])
+  reservations Reservation[]
+  seats       ReservationSeat[]
+}
+
+model Reservation {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  showtimeId Int
+  status     ReservationStatus @default(PENDING)
+  totalPrice Int
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  showtime Showtime @relation(fields: [showtimeId], references: [id])
+  seats    ReservationSeat[]
+  payment  Payment?
+}
+
+model ReservationSeat {
+  id            Int @id @default(autoincrement())
+  reservationId Int
+  showtimeId    Int
+  seatId        Int
+
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  showtime    Showtime    @relation(fields: [showtimeId], references: [id])
+  seat        Seat        @relation(fields: [seatId], references: [id])
+
+  @@unique([showtimeId, seatId])
+}
+
+model Payment {
+  id            Int @id @default(autoincrement())
+  reservationId Int @unique
+  amount        Int
+  method        String
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime @default(now())
+
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+}
+
+
