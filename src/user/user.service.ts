@@ -117,6 +117,7 @@ async findAll(query: QueryUserDto): Promise<{
         isActive: true,
         role: true,
         createdAt: true,
+        hashedRefreshToken: true,
       },
     });
 
@@ -140,6 +141,9 @@ async findAll(query: QueryUserDto): Promise<{
 
     if (updateUserDto.fullName) {
       data.fullName = updateUserDto.fullName;
+    }
+    if(updateUserDto.hashedRefreshToken){
+      data.hashedRefreshToken = updateUserDto.hashedRefreshToken;
     }
 
     if (updateUserDto.password) {
