@@ -13,11 +13,13 @@ import { AuthService } from './auth.service';
 import { AuthDto, LoginDto } from './dto';
 import { AuthGuard } from '@nestjs/passport';
 import { Public } from 'src/common/decorators/public.decorator';
+import { ApiOperation } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
+  
+  @ApiOperation({ summary: 'User login to obtain access and refresh tokens' })
   @Post('login')
   @Public()
   async login(@Body() LoginDto: LoginDto) {
@@ -26,12 +28,14 @@ export class AuthController {
     return tokens;
   }
 
+  @ApiOperation({ summary: 'Register a new user account' })
   @Post('register')
   @Public()
   register(@Body() AuthDto: AuthDto) {
     return this.authService.register(AuthDto);
   }
 
+  @ApiOperation({ summary: 'Refresh access and refresh tokens using a valid refresh token' })
   @Post('refresh')
   @UseGuards(AuthGuard('jwt-refresh'))
   async refresh(@Req() req) {
@@ -39,7 +43,8 @@ export class AuthController {
     const refreshToken = req.user.refreshToken; // từ strategy
     return this.authService.refreshTokens(userId, refreshToken);
   }
-
+  
+  @ApiOperation({ summary: 'Logout user and invalidate refresh token' })
   @Post('logout')
   @UseGuards(AuthGuard('jwt')) // hoặc jwt-refresh tùy thiết kế
   async logout(@Req() req) {
