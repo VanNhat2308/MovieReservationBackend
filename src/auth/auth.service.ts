@@ -44,6 +44,9 @@ export class AuthService {
  async login(LoginDto: LoginDto) {
     const user = await this.prismaService.user.findUnique({
       where: { email: LoginDto.email },
+      include: {
+    role: true,          
+  }
     });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -58,14 +61,14 @@ export class AuthService {
 
 //jwt
 // Hàm tạo cặp token
-  private async getTokens(userId: number, email: string): Promise<{ access_token: string; refresh_token: string }> {
+  private async getTokens(userId: number, email: string, roleName: RoleName): Promise<{ access_token: string; refresh_token: string }> {
     const [access_token, refresh_token] = await Promise.all([
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, roleName },
         { secret: process.env.JWT_SECRET_KEY, expiresIn: '5m' },
       ),
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, roleName },
         { secret: process.env.JWT_REFRESH_KEY, expiresIn: '7d' },
       ),
     ]);
@@ -80,8 +83,8 @@ export class AuthService {
   }
 
   // Khi login / sign-up thành công → trả cả 2 token
-  async signJwtToken(userId: number, email: string): Promise<{ access_token: string; refresh_token: string }> {
-    const tokens = await this.getTokens(userId, email);
+  async signJwtToken(userId: number, email: string, roleName: RoleName): Promise<{ access_token: string; refresh_token: string }> {
+    const tokens = await this.getTokens(userId, email, roleName);
     await this.updateRefreshToken(userId, tokens.refresh_token);
 
     return tokens;
@@ -96,7 +99,7 @@ export class AuthService {
     if (!rtMatches) throw new UnauthorizedException('Access Denied');
 
     // Tạo token mới
-    const tokens = await this.getTokens(userId, user.email);
+    const tokens = await this.getTokens(userId, user.email, user.role.name);
     await this.updateRefreshToken(userId, tokens.refresh_token); // rotate refresh token (tăng bảo mật)
 
     return tokens;

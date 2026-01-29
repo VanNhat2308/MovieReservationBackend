@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { RoleName } from '../enums/roles.enum';
 
+
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
@@ -15,14 +16,16 @@ export class RolesGuard implements CanActivate {
     ]);
 
     if (!requiredRoles?.length) {
-      return true; // Không yêu cầu role → chỉ cần auth JWT là đủ
+      return true;
     }
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
+    console.log('User Role:', user.role);
+    console.log('Required Roles:', requiredRoles);
 
     if (!user?.role) {
-      throw new ForbiddenException('Không tìm thấy role của bạn');
+      throw new ForbiddenException('Unauthorized access');
     }
 
     // ADMIN luôn được phép mọi thứ (bypass tất cả role check)
